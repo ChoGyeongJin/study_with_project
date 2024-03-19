@@ -1,0 +1,47 @@
+1. pom.xml에 MySQL JDBC 의존모듈 추가
+	<!--  MySQL JDBC 드라이버 -->
+	<dependency>
+		<groupId>mysql</groupId>
+		<artifactId>mysql-connector-java</artifactId>
+		<version>8.0.11</version>
+	</dependency>
+
+2. root-context.xml 파일에서 MySQL관련 DB 설정 추가 
+	<!-- MySQL 관련 설정 -->
+	<bean id="dataSource"
+		  class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/smartdb?
+					characterEncoding=UTF-8
+					&amp;
+					useSSL=false
+					&amp;
+					allowPublicKeyRetrieval=true
+					&amp;
+					serverTimezone=UTC"/>
+		<property name="username" value="smart_dev" />
+		<property name="password" value="1234" />	  
+	</bean>
+
+3. MemberMapper.xml 파일에서 내용 변경
+1) 테이블명 변경: tb_member -> tbl_member
+2) 회원 가입 구문에서 m_idx와 member_seq.nextval을 삭제함
+3) 날짜와 시간 정보를 가져오는 함수 변경: sysdate -> now()
+
+4. BoardMapper.xml 파일에서 내용 변경 
+1) 테이블명 변경: tb_board -> tbl_board
+2) 게시글 입력 구문에서 b_idx와 board_seq.nextval을 삭제함
+3) 날짜와 시간 정보를 가져오는 함수 변경: sysdate -> now()
+4) 총 게시물수 조회 구문에서 ||(결합연산자)를 CONCAT()함수로 변경
+   and title like '%'||#{searchWord}||'%' => and title like CONCAT('%',#{searchWord},'%')
+5) ROWNUM을 사용한 구문을 limit 함수를 사용한 구문으로 변경
+   ROWNUM 삭제, 서브쿼리를 메인 쿼리로, 컬럼 리스트를 *으로 변경 , <![CDATA[ ~ ]]>기호 삭제
+   limit (#{pageNum}-1)*10, 10 와 같이 작성하면 MySQL 구문 오류가 발생함
+   => SearchVO클래스에  startIdx 필드를 추가하고 BoardListService클래스의 getBoards()메소드에서
+        SearchVo클래스의 startIdx값을 (pageNum-1)*10으로 세팅함
+        (예) searchVO.setStartIdx((searchVO.getPageNum()-1)*10);
+
+
+
+
+

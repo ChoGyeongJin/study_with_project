@@ -1,0 +1,156 @@
+<<< MyBatis 개요 >>>
+
+- 자바객체와 SQL문 사이의 자동 매핑 기능을 지원하는 퍼시스턴스 프레임워크(persistence framework)
+  - 보다 효율적인 DB관련 작업을 지원하는 프레임워크(API + Rule)
+
+- JDBC 코드와 수동으로 세팅하는 파라미터와 결과 매핑을 제거해줌        
+  : DTO객체를 이용해서 SQL문에 값을 세팅하고 쿼리문의 실행 결과를 ResultSet객체로 
+    받아서 다시 DTO에 세팅하는 작업을 제거해줌
+
+- DAO와 SQL문을 분리하여 SQL문을 별도의 XML파일(*Mapper.xml)에 정의함
+
+- 모든 MyBatis 애플리케이션은 SqlSessionFactory 인스턴스 사용
+
+- SqlSessionFactory 는 MyBatis에서 핵심적인 역할을 하는 SqlSession 객체를 만들고 
+  SqlSession 객체는 DB와 SQL 작업을 하기 위해 필요한 모든 메소드를 가지고 있음
+
+- 주요 메소드
+  Object selectOne(String statement, Object parameter)
+  List selectList(String statement, Object parameter)
+  Map selectMap(String statement, Object parameter, String mapKey)
+  int insert(String statement, Object parameter)
+  int update(String statement, Object parameter)
+  int delete(String statement, Object parameter)
+
+
+<<< MyBatis를 Spring MVC에 적용시키는 절차 및 유의사항 >>>
+
+1. pom.xml에 의존모듈 추가하기
+
+- 기존의 Spring JDBC 의존모듈 위에 추가하기
+
+<!-- Database Connection: MyBatis(3.4.6)와 
+      MyBatis-Spring(1.3.2)과 버전을 맞춤 -->
+<dependency>
+  <groupId>org.mybatis</groupId>
+  <artifactId>mybatis-spring</artifactId>
+  <version>1.3.2</version>
+</dependency>
+
+<dependency>
+  <groupId>org.mybatis</groupId>
+  <artifactId>mybatis</artifactId>
+  <version>3.4.6</version>
+</dependency>
+
+
+2. root-context.xml에 빈 등록하기
+
+- 기존의 dataSource 빈 아래에 추가하기
+
+<!-- MyBatis 관련 빈 등록 -->
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <property name="dataSource" ref="dataSource"/>
+    <property name="configLocation" value="classpath:config/mybatis-config.xml"/>
+    <property name="mapperLocations" value="classpath:mapper/**/*Mapper.xml" />
+</bean>
+	
+<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+    <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+</bean>
+
+3. src/main/resources폴더 아래 config폴더를 만들고 mybatis-config.xml 파일 만들기
+- mybatis-config.xml파일은 일반적인 XML파일을 생성한 후 
+  https://mybatis.org/mybatis-3/ko/getting-started.html에 나오는 
+   <!DOCTYPE configuration ~ /mybatis-3-config.dtd">를 복붙함
+
+- <configuration>태그 내에 <typeAliases>를 이용해서 VO객체들에 대한 별칭을 설정함 
+<configuration>
+	<typeAliases>
+		<typeAlias alias="memberVO" type="human.smart.com.vo.MemberVo"/>
+		<typeAlias alias="boardVO" type="human.smart.com.vo.BoardVo"/>
+	</typeAliases> 
+</configuration> 
+
+4.  src/main/resources폴더 아래 mapper폴더를 만들고 MemberMapper.xml, BoardMapper.xml
+    파일 만들기
+- 일반적인 XML파일 생성 후 https://mybatis.org/mybatis-3/ko/getting-started.html에 나오는 
+  <!DOCTYPE mapper ~ 예문 전체를 복붙함.
+
+- 네임스페이스를 공통 패키지명과 해당Mapper의 이름으로 정의해줌
+  ** 네임스페이스는 단지 Mapper를 구분하는 역할 수행. 
+  (예) <mapper namespace="human.smart.com.MemberMapper">
+
+
+5. 회원가입 처리구문에 적용하기
+(1) "/member/join_process.do"요청에 대한 처리
+- 실제 적용 위치는 DAO클래스이며 sqlSession 빈을 등록받아서 처리함
+
+<MemberDao클래스에서의 적용 예>
+
+1) MyBatis를 사용할 때 각각의 Mapper 내에 있는 SQL구문을 Mapper의
+   네임스페이스와 SQL구문의 id값으로 구분하므로 각 Mapper파일의 네임스페이스를 
+   상수로 정의해서 SqlSession메소드 호출시 사용함
+
+2) DBConnectionPool클래스와의 상속관계를 제거하고
+    멤버변수로 SqlSession 객체를 정의하고 생성자를 이용한 의존자동주입을 받음
+
+	//MyBatis를 사용할 때 각각의 Mapper 내에 있는 SQL구문을 Mapper의
+	//네임스페이스와 SQL구문의 id값으로 구분하므로 각 Mapper파일의 네임스페이스를 
+	//상수로 정의해서 SqlSession메소드 호출시 사용함
+	public static final String MAPPER = "human.smart.com.MemberMapper";
+	
+	//MyBatis를 이용한 DB연결 및 작업은 SqlSession객체가 담당함
+	SqlSession sqlSession;
+	
+	//SqlSession객체는 root-context.xml에 빈으로 등록했으므로
+	//생성자 방식으로 의존 자동주입 받음
+	@Autowired
+	public MemberDAO(SqlSession sqlSession) {
+		this.sqlSession = sqlSession;
+	}
+
+3) 기존의 join()메소드와 변경된 join()메소드, MemberMapper.xml에 정의된 sql구문
+
+가. 기존의 join() 메소드
+
+	public int join(MemberVO vo){
+		int result = 0;
+		String sql = "insert into tb_member (m_idx, member_id, member_pw, member_name, handphone, email) "
+				+ " values(member_seq.nextval, ?,?,?,?,?)";
+		try {
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, vo.getMember_id());
+			pstmt.setString(2, vo.getMember_pw());
+			pstmt.setString(3, vo.getMember_name());
+			pstmt.setString(4, vo.getHandphone());
+			pstmt.setString(5, vo.getEmail());
+			result = pstmt.executeUpdate();	
+			
+		} catch (SQLException e) {
+			System.out.println("회원정보 입력 중 예외발생");
+		}
+		
+		return result;
+	}
+
+나. 변경된 join() 메소드
+
+	public int join(MemberVO vo){
+		//회원정보 입력 실패시 0 반환
+		return sqlSession.insert(MAPPER+".join", vo);
+	}
+
+
+다. MemberMapper.xml에 정의된 sql구문
+<!-- 회원정보 입력구문 -->
+	<insert id="join" parameterType="memberVO">
+		insert into tb_member (member_idx, member_id, member_pw, member_name, handphone, email)
+	      	   values (member_seq.nextval,#{member_id},#{member_pw},#{member_name},#{handphone},#{email})
+	</insert>
+
+
+
+
+
+

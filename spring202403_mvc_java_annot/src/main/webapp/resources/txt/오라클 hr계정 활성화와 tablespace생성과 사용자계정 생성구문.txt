@@ -1,0 +1,35 @@
+<hr 계정 활성화 및 비밀번호 설정>
+- 오라클 설치와 함께 생성되는 기본 계정들: 
+  sys(super 사용자, 모든 권한을 가짐), system(sys와 같지만 DB 생성 불가), 
+  hr(연습용 샘플 계정, 보안 상의 이유로 잠겨있음)
+- sqlplus 접속하기
+  cmd창에서 sqlplus 입력 > system > 1234 또는 sys as sysdba > 1234
+
+Connected to:
+Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+
+SQL> conn /as sysdba --관리자 계정으로 접속
+Connected.
+SQL> alter user hr account unlock; --hr계정을 활성화시킴
+User altered.
+SQL> alter user hr identified by 1234; --1234로 비밀번호 설정
+User altered.
+SQL> conn hr/1234 --hr계정으로 접속되는지 확인
+Connected.
+SQL> quit --sqlplus 종료
+
+
+<테이블스페이스 생성하기>
+- 사용자 계정을 만들기 전에 사용자 계정에서 사용할 테이블스페이스 생성하기
+- 테이블스페이스: 테이블과 기타 DB객체들을 담을 커다란 저장공간
+create tablespace smarttbs datafile 'C:\oraclexe\app\oracle\oradata\XE\smarttbs.dbf'
+ size 100m autoextend on next 5m;
+
+<사용자 계정 생성하기>
+create user smart_dev identified by 1234 --smart_dev계정과 비밀번호 지정
+  default tablespace smarttbs --smart_dev 계정에서 기본적으로 사용할 테이블스페이스 지정
+  temporary tablespace temp; --정렬작업을 위한 임시 저장공간으로 temp 테이블스페이스 지정
+
+<사용자 계정에 권한 부여하기>
+- 사용자 계정을 이용해서 실제 DB 작업을 하려면 권한이 필요함
+grant dba to smart_dev; -- DBA의 권한 부여(오라클에서 제공하는 대부분의 기능 사용 가능)

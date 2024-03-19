@@ -1,0 +1,64 @@
+인터셉터(interceptor)
+- Spring에서는 HandlerInterceptor 인터페이스를 구현한 클래스로 사용자의 요청을 컨트롤러가 실행하기 전(preHandle),
+  컨트롤러가 실행한 후(postHandle), 뷰를 실행한 후(afterCompletion)에 실행의 흐름을 가로채서 공통기능을 적용시킬 수 있음
+- HandlerInterceptor 인터페이스에서 JDK8 이후부터는 3개의 메소드를 디폴트 메소드로 정의해 둠
+  : preHandle(), postHandle(), afterCompletion() 이들 가운데 필요한 메소드를 Override해서 사용함
+  
+- 로그인 인터셉터 구현 및 적용
+  : 회원만 보낼 수 있는 요청URL이 주소표시줄을 통해서 입력될 때 컨트롤러가 요청을 실행하기 전에 가로채어
+    로그인 화면이 출력되도록 함
+- 사용자의 정상적인 요청URL에 대한 요청을 가로챔
+
+
+1. human.smart.com.interceptor 패키지 내에 아래와 같이 LoginInterceptor클래스 정의하기
+
+public class LoginInterceptor implements HandlerInterceptor {
+
+	@Override//사용자 요청이 Controller로 전달되기 전에 요청을 가로채어서 메소드 실행
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {
+		
+		boolean result = true;//Controller로 사용자 요청이 전달되게 하는 반환값
+		HttpSession session = request.getSession();
+		String member_id = (String)session.getAttribute("member_id");
+		
+		if(member_id == null) {
+			response.sendRedirect(request.getContextPath()+"/member/login.do");
+			result = false;//Controller로 사용자 요청이 전달되지 못하도록 하는 반환값
+		}
+		
+		return result;
+	}
+
+}
+
+2. servlet-context.xml 파일에 로그인 인터셉터 관련 설정을 하단에 추가함
+
+	<!-- Interceptor 설정: 사용자의 요청에 대해서 로그인 여부를 체크하는 LoginInterceptor 설정 -->
+	<interceptors>
+		<interceptor>
+			<mapping path="/**/*.do"/> 
+			<!-- 경로 패턴을 가리키는 특수문자(*: 0개 또는 그 이상의 글자, ?: 1개 글자, **: 0개 또는 그 이상의 폴더경로 -->
+			<!-- 로그인 인터셉터에 제외되는 요청들 -->
+			
+			<!-- 메인 페이지에 대한 요청들 -->
+			<exclude-mapping path="/"/>
+			<exclude-mapping path="/index.do"/>
+			
+			<!-- 회원관리에서 제외되는 요청들 -->
+			<exclude-mapping path="/member/join.do"/>
+			<exclude-mapping path="/member/checkId.do"/>
+			<exclude-mapping path="/member/emailCheck.do"/>
+			<exclude-mapping path="/member/joinProcess.do"/>
+			<exclude-mapping path="/member/login.do"/>
+			<exclude-mapping path="/member/loginProcess.do"/>
+			
+			<!-- 게시판에서 제외되는 요청들 -->
+			<exclude-mapping path="/board/list.do"/>
+			<exclude-mapping path="/board/view.do"/>
+			<exclude-mapping path="/board/download.do"/>
+					
+			<beans:bean id="loginInterceptor" class="human.smart.com.interceptor.LoginInterceptor"/>
+		</interceptor>
+	
+	</interceptors>

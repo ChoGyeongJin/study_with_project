@@ -1,0 +1,30 @@
+create table tbl_member(
+m_idx int unsigned auto_increment, -- 회원번호
+member_id varchar(30) not null unique, -- 아이디
+member_pw varchar(20) not null, -- 비밀번호
+member_name varchar(30) not null, -- 이름
+email varchar(50) not null unique, -- 이메일
+handphone varchar(20) not null unique, -- 핸드폰번호
+grade decimal(1) default 0, -- 등급
+reg_date datetime default now(), -- 가입일
+last_modified_date datetime default now(), -- 최근 수정일
+cancel_or_not decimal(1) default 0, -- 회원탈퇴 여부
+constraint tbl_member_pk primary key (m_idx) -- 기본키
+);
+
+create table tbl_board(
+b_idx int unsigned auto_increment, -- 게시글 번호
+m_idx int unsigned not null, -- 회원 번호
+writer varchar(30) not null, -- 작성자
+title varchar(50) not null, -- 제목
+content varchar(1000) not null, -- 내용
+originfile_name varchar(50), -- 원본 파일명
+savefile_name varchar(50), -- 저장 파일명
+read_cnt int unsigned default 0, -- 조회수
+post_date datetime default now(), -- 등록일
+update_date datetime default now(), -- 수정일
+del_or_not decimal(1) default 1, -- 게시글 유지 여부
+constraint tbl_board_pk primary key (b_idx), -- 기본키
+constraint tbl_board_fk foreign key (m_idx)
+    references tbl_member (m_idx) -- 외래키
+);

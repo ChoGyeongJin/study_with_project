@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<!-- Appenders -->
+	<appender name="console" class="org.apache.log4j.ConsoleAppender">
+		<param name="Target" value="System.out" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%-5p: %c - %m%n" />
+			<!-- %p:로그레벨, %c:해당 로그를 작성하는 Logger 이름, %m:로그내용, %n:줄바꿈 -->
+		</layout>
+	</appender>
+	
+	<!-- Application Loggers -->
+	<logger name="human.smart.com">
+		<level value="info" />
+	</logger>
+	
+	<!-- 3rdparty Loggers -->
+	<logger name="org.springframework.core">
+		<level value="info" />
+	</logger>
+	
+	<logger name="org.springframework.beans">
+		<level value="info" />
+	</logger>
+	
+	<logger name="org.springframework.context">
+		<level value="info" />
+	</logger>
+
+	<logger name="org.springframework.web">
+		<level value="info" />
+	</logger>
+
+	<!-- 로그레벨을 debug 레벨로 낮추면 보다 자세한 로그를 얻을 수 있고 
+	     에러 발생시 문제 원인을 찾는데 도움이 된다.--> 
+	<logger name="org.springframework.web.servlet">
+		<level value="DEBUG" />
+	</logger>
+	
+	
+	<!-- Root Logger -->
+	<root>
+		<priority value="warn" />
+		<appender-ref ref="console" />
+	</root>
+	
+</log4j:configuration>

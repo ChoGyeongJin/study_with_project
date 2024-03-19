@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="human.smart.com.MemberMapper">
+<!--  네임스페이스는 단지 현재 Mapper를 다른 Mapper와 구분하는 역할을 함  
+      DAO클래스에서 현재 Mapper를 지정할 때 네임스페이스를 사용함
+      mapper 태그 내에 정의된 SQL문 태그들은 네임스페이스와 함께 지정되어 사용됨 
+-->
+
+<!--  SQL문 정의 -->
+
+	<!-- 회원정보 입력구문 -->
+	<!-- parameterType의 값으로 memberVO을 사용할 수 있는 것은 mybatis-config.xml에서 MemberVO클래스를 memberVO로 
+	     별칭 정의해주었기 때문 -->
+	<insert id="join" parameterType="memberVO">
+		insert into tbl_member (member_id, member_pw, member_name, handphone, email)
+	      	   values (#{member_id},#{member_pw},#{member_name},#{handphone},#{email})
+	</insert>
+
+	<!-- 로그인 -->
+	<select id="login" parameterType="string" resultType="memberVO">
+		select * from tbl_member where member_id = #{member_id}
+	</select>
+	
+	<!-- 비밀번호 가져오기 -->
+	<select id="getPassword" parameterType="string" resultType="string">
+		select member_pw from tbl_member where member_id = #{member_id} and cancel_or_not=0 
+	</select>
+	
+	
+	<!-- 회원정보 가져오는 구문 -->
+	<select id="getMember" parameterType="_int" resultType="memberVO">
+		select * from tbl_member where m_idx = #{m_idx}
+	</select>
+	
+	<!-- 회원정보 수정구문 -->
+	<update id="updateMember" parameterType="memberVO">
+		update tbl_member set member_pw=#{member_pw}, member_name=#{member_name}, handphone=#{handphone},
+					         email=#{email}, last_modified_date=now() where m_idx=#{m_idx}
+	</update>
+
+	<!-- 회원탈퇴 처리구문 -->
+	<update id="cancel" parameterType="_int">
+		update tbl_member set last_modified_date=now(), cancel_or_not=-1 where m_idx=#{m_idx}
+	</update>
+  
+</mapper>

@@ -1,0 +1,67 @@
+Spring MVC에서 Lombok API를 사용하기 위한 조치
+
+Lombok API를 자바 코드에 적용하면
+- 클래스나 멤버변수 위에 어노테이션을 붙여서 스프링 컨테이너로 하여금 어노테이션에 정의된 생성자나 메소드를 정의하게 하고
+  의존 자동주입이 이루어지도록 함
+- 자바클래스에서 소스 코드 중 단순하고 반복적인 코드를 어노테이션으로 대체함
+- 개발자가 작성해야 할 코드는 줄어들지만 Lombok API에서 제공하는 어노테이션에 대한 이해가 필요함
+	  
+ 1. pom.xml에 의존모듈 추가하기
+  <dependency>
+  	<groupId>org.projectlombok</groupId>
+  	<artifactId>lombok</artifactId>
+  	<version>1.18.22</version>
+  	<scope>provided</scope>
+  </dependency>
+  
+  <dependency>
+  	<groupId>log4j</groupId>
+  	<artifactId>log4j</artifactId>
+  	<version>1.2.17</version>
+  </dependency>
+	  
+2. mvnrepository로 가서 lombok-1.18.22.jar파일 다운로드 및 설치하기
+
+<<< cmd 창 >>>
+jar파일이 위치한 경로>java -jar lombok-1.18.22.jar
+
+** lombok installer창에서 "Specify location..."버튼을 클릭해서 STS.exe파일을 선택한 후
+   "Install/Update"버튼을 클릭해서 설치해야 함
+
+3. STS를 재시작해야 Lombok이 적용됨
+
+4. Lombok을 적용하기 원하는 클래스와 메소드에 사용할 주요 어노테이션
+
+- @Setter(onMethod_={ @Autowired }) : 멤버변수 위에 정의하면 의존 자동주입을 하는 setter메소드를 정의해줌
+- @Getter @Setter: 멤버변수에 대한 getter and Setter 메소드를 정의해줌
+- @RequiredArgsConstructor: @NonNull이나 final이 붙은 인스턴스 변수에 대한 생성자를 정의해줌
+- @AllArgsConstructor: 인스턴스 변수로 선언된 모든 멤버변수를 파라미터로 받는 생성자를 정의해줌
+- @NoArgsConstructor: 기본 생성자를 정의해줌
+- @Data: @RequiredArgsConstructor, @Getter @Setter 등을 모두 결합한 형태로 한 번에 모든 메소드를 정의해줌
+         세부적인 설정이 필요없는 경우라면 @Data를 주로 사용함
+
+5. 프로젝트 폴더 내 자바클래스에 적용하기
+
+1) VO클래스 위에 @Data어노테이션을 붙이고 getter and setter 메소드를 삭제함.
+   : MemberVO, BoardVO, SearchVO, PageNav
+
+2) Controller클래스의 필드 위에 @Setter(onMethod_={ @Autowired }) 어노테이션을 붙이고
+   set메소드를 이용한 의존 자동 주입 코드를 삭제함
+   : MemberController, BoardController
+   	
+3) DAO클래스 위에 @RequiredArgsConstructor 어노테이션을 붙이고
+   인스턴스 필드인 SqlSession 앞에 final을 붙여주고 생성자를 이용한 의존 자동주입 코드를 삭제함
+   : MemberDAO, BoardDAO
+
+4) Service클래스 위에 @AllArgsConstructor 어노테이션을 붙이고 생성자를 이용한 의존 자동주입 코드를 삭제함   
+   : MemberService 클래스들, BoardService 클래스들
+
+
+
+
+
+
+
+
+
+

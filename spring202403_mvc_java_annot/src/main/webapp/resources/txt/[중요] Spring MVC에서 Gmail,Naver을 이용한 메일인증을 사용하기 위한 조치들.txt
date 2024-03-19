@@ -1,0 +1,195 @@
+1. pom.xml에 의존모듈 추가하기
+		<!-- javax mail 관련 의존모듈 추가 -->
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context-support</artifactId>
+			<version>5.3.9</version>
+		</dependency>		
+
+2. root-context.xml 파일에서 MySQL 관련 DB설정 추가
+
+	<!-- 이메일 인증 관련 빈 등록 -->
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<!-- <property name="host" value="smtp.gmail.com"/> -->
+		<property name="host" value="smtp.naver.com"/>
+		<!-- <property name="port" value="587"/> -->
+		<property name="port" value="465"/>
+		<!-- <property name="username" value="구글 메일계정"/>
+		<property name="password" value="2단계 앱비밀번호(공백제거)"/> -->
+		<property name="username" value="실명인증된 네이버 메일계정"/>
+		<property name="password" value="네이버 비밀번호"/>
+		<property name="javaMailProperties">
+			<props>
+				 <prop key="mail.transport.protocol">smtp</prop>
+				 <prop key="mail.smtp.auth">true</prop>
+				 <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+				 <prop key="mail.smtp.starttls.enable">true</prop>
+				 <prop key="mail.debug">true</prop>
+				 <!-- <prop key="mail.smtp.ssl.trust">smtp.gmail.com</prop> -->
+				 <prop key="mail.smtp.ssl.trust">smtp.naver.com</prop>
+				 <prop key="mail.smtp.ssl.protocols">TLSv1.2</prop>
+			</props>
+		</property>
+	</bean>
+
+3. join.jsp 에  메일인증 관련 태그 추가
+
+	            <tr>
+	                <td>
+	                	<div class="div-email">
+		                	<input type="email" name="email" id="email" placeholder="이메일">
+		                	<input type="button" id="email_auth_btn" value="메일인증">
+	                	</div>
+	                	<div class="div-email">
+		                	<input type="text" id="auth_num_input" placeholder="인증번호 6자리를 입력해주세요"
+		                	disabled = "disabled" maxlength="6">
+		                	<input type="button" id="confirm_email_btn" value="인증확인">
+	                	</div>
+	                	<input type="hidden" name="result_confirm" id="result_confirm">
+	                	<span id="mail-check-result"></span>
+	                
+	                </td>
+	            </tr>
+
+4. join.js에 메일 인증 관련 이벤트 처리 구문 추가
+
+	//// Email 인증 관련 추가 부분 ////
+	let code; //서버로 부터 받은 인증번호 저장
+	const checkInput = $("#auth_num_input");//인증번호 입력하는 곳
+	
+	$("#email_auth_btn").on("click", function(){//이메일 인증버튼을 클릭했을 때
+		
+		const email = $("#email").val();//이메일 주소
+		
+		//이메일 유효성 검사
+		let regExp_email = /^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$/;
+		
+		if(regExp_email.test(email)){//유효성 검사를 통과하면
+			
+			$.ajax({
+				type: "get",
+				url: "emailCheck.do?email="+email,
+				success: function(data){
+					checkInput.attr("disabled", false);//인증번호 입력란을 활성화시킴
+					code = data;//서버에서 받은 인증번호를 변수 code에 저장
+					alert("인증번호가 전송되었습니다");
+				}
+			});//end of ajax
+			
+		}else{
+			alert("입력하신 내용이 이메일 형식에 맞지 않습니다");
+			frm_join.email.focus();
+		}
+	
+	});//end of email
+	
+	//사용자가 자신의 메일에서 인증번호을 확인한 후 인증번호 입력란에 인증번호를 입력하고 난 뒤 인증확인 버튼을 클릭한 경우
+	$("#confirm_email_btn").on("click", function(){
+		
+		const inputCode = checkInput.val();//인증번호 입력란에 입력된 값
+		const resultMsg = $("#mail-check-result");//결과값을 보여주는 span태그
+		const resultEmailAuth = $("#result_confirm");//인증결과를 넘겨줄 input hidden태그
+		
+		if(inputCode == code){//인증번호 입력란에 입력된 값과 서버에서 받은 인증번호 값이 일치하면
+			resultMsg.html("정상적으로 인증되었습니다");
+			resultMsg.css("color", "green");
+			resultEmailAuth.val("PASS");//메일인증 성공		
+		}else{
+			resultMsg.html("인증번호가 일치하지 않습니다. 다시 확인해주세요");
+			resultMsg.css("color", "red");
+			resultEmailAuth.val("FAIL");//메일인증 성공
+		}
+		 
+	});//end of confirm_email
+
+
+	//유효성 검사 부분에 추가
+        }else if(frm_join.email.value.length == 0){
+            alert("이메일이 입력되지 않았습니다");
+            frm_join.email.focus();
+
+        }else if(frm_join.result_confirm.value == 'FAIL'){
+            alert("이메일 인증이 필요합니다");
+            frm_join.email.focus();
+
+        }else{//입력값이 모두 정상적으로 입력되어진 경우
+            valid = true;
+        }
+
+5. AjaxController에 요청에 대한 처리 구문 추가
+
+@RestController//@Controller + @ResponseBody
+@RequestMapping("/member")
+public class AjaxController {
+	
+	@Setter(onMethod_= {@Autowired})
+	private MemberService mEmailSend;
+
+	//이메일 인증
+	@GetMapping("/emailCheck.do")
+	public String emailCheck(String email) {
+		//이메일 요청처리를 하는 MemberService클래스 정의: MemberEmailSendService클래스
+		//요청 처리 메소드: joinEmail(String email)
+		return mEmailSend.joinEmail(email);
+	}
+}
+
+
+6. MemberEmailSendService 클래스 정의해서 인증번호 생성 및 메일보내기 요청 처리
+
+@Service("mEmailSend")
+@AllArgsConstructor
+public class MemberEmailSendService implements MemberService {
+	private JavaMailSenderImpl mailSender;
+	
+	@Override
+	public String joinEmail(String email) {
+		//Math.random()의 값의 범위: 0 <= r(난수) < 1
+		//1 <= r < 10 난수 발생시키기: (int)(Math.random()*9) +1
+		//인증번호 6자리를 난수를 이용해서 생성하기
+		//인증번호 범위: 111111 <= authNumber < 1000000 => (int)(Math.random()*888889) + 111111
+		int authNumber = (int)(Math.random()*888889) + 111111;
+		
+		//String setFrom = "구글 메일계정";
+		String setFrom = "네이버 메일계정";
+		String toMail = email;
+		String title = "회원가입 인증 메일입니다.";
+		String content = "홈페이지를 방문해주셔서 감사합니다.<br><br>"
+				         + "인증번호: "+authNumber
+				         + "<br>"
+				         +"해당 인증번호를 인증번호 확인란에 입력해 주세요.";
+		
+		mailSend(setFrom, toMail, title, content);
+		
+		return Integer.toString(authNumber);
+	}
+
+	private void mailSend(String setFrom, String toMail, String title, String content) {
+		MimeMessage message = mailSender.createMimeMessage();
+		try {
+			MimeMessageHelper helper = new MimeMessageHelper(message, true, "utf-8");
+			//true: multipart 형식의 메시지 전달
+			helper.setFrom(setFrom);
+			helper.setTo(toMail);
+			helper.setSubject(title);
+			helper.setText(content, true);//true: html형식으로 전송 (값을 입력하지 않으면 텍스트로 전송)
+			mailSender.send(message);
+			
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+	}
+
+}
+
+
+
+
+
+			

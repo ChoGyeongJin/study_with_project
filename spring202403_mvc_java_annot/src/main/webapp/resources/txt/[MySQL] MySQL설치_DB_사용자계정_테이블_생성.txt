@@ -1,0 +1,294 @@
+
+1. MySQL 홈페이지 접속 > 다운로드 및 설치
+
+- root계정 비번: 1234
+- cmd 창에서 mysql 작업하기 위해 MySQL 설치 폴더 중
+   실행파일들을 가지고 있는 bin 폴더를 path 환경변수에
+   추가해줌
+- cmd 창
+   ** MySQL에 접속	
+   C:\Users\admin>mysql -uroot -p1234
+
+   ** 데이터베이스 확인(기본 제공 DB: mysql)
+   mysql> show databases;
+
+   ** 사용자 정의 DB 생성하기(smartdb)
+   create database smartdb default character set utf8;
+   -- 기본 문자셋을 utf8으로 지정하지 않으면 데이터 저장시
+        한글 깨짐 발생
+   
+   ** 생성된 DB 사용하기
+   use smartdb;
+
+   ** DB를 사용할 사용자 계정 생성하기
+   create user 'smart_dev' identified by '1234';
+   -- 세번째 사용자 계정 생성과 동일한 의미(외부 접근 허용)
+
+   create user 'smart_dev'@'localhost' idenitified by '1234';
+   -- 내부 접근만 허용(외부 접근 허용하지 않음)
+
+   create user 'smart_dev'@'%' identified by '1234';
+   -- 외부 접근 허용(%를 IP주소로 바꿀 수도 있음)
+
+   ** 생성된 계정에 권한 부여하기(grant)
+   grant all privileges on smartdb.* to 'smart_dev';
+
+   ** 변경된 권한 적용시키기(메모리에 반영시키기)
+   flush privileges;
+
+   ** 권한 확인하기
+   show grants for 'smart_dev';
+
+   ** 권한 취소하기
+   revoke all on smartbd.* from 'smart_dev';
+ 
+   ** 사용자 계정 삭제하기
+   drop user 'smart_dev';
+
+   ** MySQL의 사용자 계정 조회하기
+   -- mysql 데이터베이스에서 root 계정으로만 가능
+   select user, host from user;
+
+   ** 콘솔창 mysql 나오기
+   quit
+
+
+2. MySQL의 데이터 타입
+
+1) 숫자 타입(음수, 양수 구분 키워드: 음수 포함(signed), 양수만 사용(unsigned))
+tinyint: 1byte
+smallint: 2 byte
+mediumint: 3 byte
+int: 4 byte (가장 많이 사용되는 타입)
+bigint: 8 byte
+decimal: 가변 길이, 전체 자릿수와 소수점 자릿수 (비교)오라클의 number와 유사
+float: 4 byte
+double: 8 byte
+
+2) 문자열 타입
+varchar: 가변 길이, 가장 많이 사용(알파벳: 1byte, 한글: 3byte)
+char: 고정 길이
+
+3) 대용량 타입(tiny-,small-,medium-,long-)
+blob: binary 형식
+text: 텍스트 형식
+
+4) 날짜와 시간 타입
+date: 날짜 만을 위한 타입(0000-00-00 ~ 9999-12-31)
+datetime: 가장 많이 사용, 날짜와 시간을 위한 타입
+timestamp: 초 단위의 타입(1970-01-01 00:00:00 이후로 지난 초)
+time: 시간 타입(-838:59:59 ~ 838:59:59)
+year: 연도 타입(1901 ~ 2155)
+
+
+3. 테이블 생성 및 CRUD
+** MySQL의 주석: 한줄 주석(#, --), 여러 줄 주석(/*  내용 */)
+
+# 번호, 이름, 주소, 전화번호를 가지는 tbl_test 테이블 생성하기
+num -- 저장될 데이터의 개수: 예상 40억개 미만, 양수만 사용,not null, 기본키
+name -- 문자열: 한글 20 byte, 가변길이, not null
+address -- 문자열: 한글 100 byte, 가변길이, not null
+tel  -- 문자열: 숫자,특수문자(-) 15 byte, 가변길이  
+
+
+create table tbl_test(
+num int unsigned not null auto_increment,
+name varchar(20) not null,
+address varchar(100) not null,
+tel varchar(15),
+constraint tbl_test_pk primary key(num)
+);
+
+** 기본키의 값을 데이터가 입력될 때 마다 1씩 증가시켜주기: auto_increment
+** MySQL에는 Sequence 객체가 없음 => 별도의 Sequence 생성구분이 필요없음
+
+# 회원테이블 생성하기: tbl_member -- 현재 시스템의 날짜와 시간정보 가져오기: now()
+create table tbl_member(
+m_idx int unsigned auto_increment, 
+member_name varchar(30) not null,
+member_id varchar(30) not null unique,
+member_pw varchar(20) not null,
+email varchar(50) not null unique,
+handphone varchar(20) not null unique,
+grade decimal(1) default 0,
+join_date datetime default now(),
+update_date datetime default now(),
+cancel_or_not decimal(1) default 0,
+constraint tbl_member_pk primary key (m_idx)
+);
+
+
+# CRUD 기능 실행하기
+1) insert 구문
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동', 'hong','1234','hong@naver.com','010-1111-2222'); 	
+
+2) select 구문
+select * from tbl_member;  
+
+3) update 구문: 홍길동->홍길동2, hong@naver.com->hong2@gmail.com
+update tbl_member set member_name = '홍길동2', email = 'hong2@gmail.com'
+    	where m_idx = 1;
+
+4) delete 구문
+delete from tbl_member
+	where m_idx = 1;
+
+
+# tbl_member테이블에 5개의 데이터를 저장하고 4번째, 5번째의 데이터만 조회하기
+   (원하는 데이터의 개수 만큼 조회하기 (오라클)rownum 사용 (MySQL) limit 인덱스값, 개수)
+
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동1', 'hong1','1234','hong1@naver.com','010-1111-2221'); 	
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동2', 'hong2','1234','hong2@naver.com','010-1111-2222'); 	
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동3', 'hong3','1234','hong3@naver.com','010-1111-2223'); 	
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동4', 'hong4','1234','hong4@naver.com','010-1111-2224'); 	
+insert into tbl_member (member_name, member_id, member_pw, email, handphone)
+   	values('홍길동4', 'hong5','1234','hong5@naver.com','010-1111-2225'); 	
+
+select * from tbl_member 
+	order by m_idx
+        	limit 3, 2;
+
+
+#tbl_board테이블 생성하기(기존의 오라클의 tb_board테이블을 MySQL테이블로 정의하기)
+
+create table tbl_board(
+b_idx int unsigned auto_increment, -- 게시글 번호
+m_idx int unsigned not null, -- 회원 번호
+writer varchar(30) not null, -- 작성자
+title varchar(50) not null, -- 제목
+content varchar(1000) not null, -- 내용
+originfile_name varchar(50), -- 원본 파일명
+savefile_name varchar(50), -- 저장 파일명
+read_cnt int unsigned default 0, -- 조회수
+post_date datetime default now(), -- 등록일
+update_date datetime default now(), -- 수정일
+del_or_not decimal(1) default 1, -- 게시글 유지 여부
+constraint tbl_board_pk primary key (b_idx), -- 기본키
+constraint tbl_board_fk foreign key (m_idx)
+    references tbl_member (m_idx) -- 외래키
+);
+
+
+** 게시판 테이블에 데이터 입력하기
+insert into tbl_board (m_idx, writer, title, content) 
+	values (2, '홍길동1', '테스트', '테스트');
+
+** 게시판 테이블 조회하기
+select * from tbl_board;
+
+
+4. 테이블 관련 DDL문
+
+1) 테이블 이름 변경하기
+rename table member_tbl to tbl_member;
+
+2) 컬럼명 변경하기
+alter table tbl_member change join_date reg_date datetime default now();
+alter table tbl_member change updat_date last_modified_date datetime default now();
+
+3) 컬럼 추가하기
+alter table tbl_member add test varchar(50);
+
+4) 컬럼 데이터 타입, 제약조건 변경하기
+alter table tbl_member modify test varchar(100) default 'test';
+
+5) 컬럼 삭제하기
+alter table tbl_member drop test;
+
+6) 테이블 삭제하기
+drop table tbl_member;
+
+7) 테이블 정의 내용 확인하기(describe/desc/explain)
+desc tbl_member;
+
+### 컬럼명 변경된 tbl_member DDL문 ###
+create table tbl_member(
+m_idx int unsigned auto_increment, -- 회원번호
+member_id varchar(30) not null unique, -- 아이디
+member_pw varchar(20) not null, -- 비밀번호
+member_name varchar(30) not null, -- 이름
+email varchar(50) not null unique, -- 이메일
+handphone varchar(20) not null unique, -- 핸드폰번호
+grade decimal(1) default 0, -- 등급
+reg_date datetime default now(), -- 가입일
+last_modified_date datetime default now(), -- 최근 수정일
+cancel_or_not decimal(1) default 0, -- 회원탈퇴 여부
+constraint tbl_member_pk primary key (m_idx) -- 기본키
+);
+
+
+
+
+
+
+5. 오라클과 비교해서 유의해야 할 사항
+
+1) null 대체 함수
+오라클: nvl(컬럼명, '대체값')
+MySQL: ifnull(컬럼명, '대체값')
+
+2) 쿼리문 결과값 개수 제한
+오라클: rownum <= 개수
+MySQL: limit 시작인덱스, 개수
+
+3) 현재 날짜와 시간
+오라클: sysdate
+MySQL: now()
+
+4) 날짜 값의 문자변환 함수
+오라클: to_char(sysdate, 'YYYY-MM-DD')
+MySQL: date_format(now(), '%Y-%m-%d')
+
+5) 요일변환의 숫자 범위
+오라클: 일,월,화,수,목,금,토 - 1~7
+MySQL: 일,월,화,수,목,금,토 - 0~6 
+
+6) 형변환 함수
+오라클: to_char, to_number, to_date
+MySQL: cast( 데이터 as 변환타입(char/unsigned integer/date) )
+
+7) 조건식
+오라클: decode(컬럼, 값, true일 때 값, false일 때 값)
+MySQL: ifnull(조건식, true일 때 값, false일 때 값)
+
+8) 숫자 값의 1씩 자동 증가
+오라클: 시퀀스 생성, nextval 사용
+MySQL: 컬럼의 제약조건에 auto_increment 추가
+
+9) 문자열 결합
+오라클: 컬럼A||'내용', concat('내용', 컬럼A)
+MySQL: CONCAT(컬럼A, '내용')
+
+10) 문자열 추출
+오라클: substr(문자열/컬럼명, 시작위치, 추출할 문자열 길이)
+MySQL: substring(문자열/컬럼명, 시작위치, 추출할 문자열 길이) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

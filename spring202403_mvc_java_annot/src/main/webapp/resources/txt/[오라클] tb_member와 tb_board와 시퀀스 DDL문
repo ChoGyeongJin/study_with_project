@@ -1,0 +1,42 @@
+create table tb_member(
+m_idx number,
+member_id varchar2(30) unique not null,
+member_pw varchar2(20) not null,
+member_name varchar2(50) not null,
+email varchar2(50) not null,
+handphone varchar2(20) unique not null,
+grade number(1) default 0,
+join_date date default sysdate,
+update_date date default sysdate, 
+cancel_date date,
+cancel_or_not number(1) default 0,
+constraint tb_member_pk primary key (m_idx)
+);
+
+create sequence member_seq
+minvalue 1
+maxvalue 9999999
+nocycle nocache noorder;
+
+
+create table tb_board(
+b_idx number, --게시글번호(기본키)
+m_idx number not null, --회원번호(참조키)
+writer varchar2(30) not null, --작성자
+title varchar2(50) not null, --제목
+content varchar2(1000) not null, --내용
+originfile_name varchar2(50),--원본파일명
+savefile_name varchar2(50),--저장파일명
+read_cnt number(10) default 0,--조회수
+post_date date default sysdate,--작성일
+update_date date default sysdate, --수정일
+del_or_not number(1) default 0,--삭제여부
+constraint tb_board_pk primary key (b_idx),
+constraint tb_board_fk foreign key (m_idx)
+   references tb_member (m_idx) 
+);  
+
+create sequence board_seq
+minvalue 1
+maxvalue 9999999999
+nocycle nocache noorder;

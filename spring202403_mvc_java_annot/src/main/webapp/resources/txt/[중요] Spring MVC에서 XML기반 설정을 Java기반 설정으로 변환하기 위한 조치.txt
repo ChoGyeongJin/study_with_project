@@ -1,0 +1,28 @@
+Spring MVC에서 XML 기반 설정을 Java기반 설정으로 변환하기 위한 조치
+
+1. XML기반 설정 파일들을 삭제하고 Java 기반 설정 파일들을 새롭게 생성함
+(1) WEB-INF 폴더에 있는 web.xml파일과 spring 폴더에 있는 servlet-context.xml, 
+    security-context.xml, root-context.xml 파일을 모두 삭제함
+(2) src/main/java 내에 있는 기본 패키지에 config 패키지를 생성하고 그 안에 WebConfig.java,
+    ServletConfig.java, RootConfig.java 파일을 생성함
+    
+2. XML설정파일 삭제와 관련해서 pom.xml에 web.xml파일이 없음을 알려주는 플러그인 추가하기
+<!-- web.xml 파일이 없음을 알려주는 플러그인 설정 -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-war-plugin</artifactId>
+    <version>3.2.0</version>
+    <configuration>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+    </configuration>
+</plugin>
+
+3. 자바 설정 클래스 정의하기
+WebConfig.java,ServletConfig.java, RootConfig.java
+
+4. src/main/java 내에 있는 기본 패키지에 mapper 패키지를 생성하고 Mapper 인터페이스 생성
+MemberMapper.java, BoardMapper.java
+
+
+
+        

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="human.smart.com.BoardMapper">
+<!--  네임스페이스는 단지 현재 Mapper를 다른 Mapper와 구분하는 역할을 함  
+      DAO클래스에서 현재 Mapper를 지정할 때 네임스페이스를 사용함
+      mapper 태그 내에 정의된 SQL문 태그들은 네임스페이스와 함께 지정되어 사용됨 
+-->
+
+	<!-- 게시글 입력 -->
+	<insert id="insert" parameterType="boardVO">
+		<!-- 업로드된 파일이 있는 경우와 없는 경우 -->
+		<choose>
+			<when test="originfile_name != null">
+				insert into tbl_board (m_idx, writer, title, content, originfile_name, savefile_name)
+						values(#{m_idx},#{writer},#{title},#{content},#{originfile_name},#{savefile_name})
+			</when>
+			<otherwise>
+				insert into tbl_board (m_idx, writer, title, content)
+						values(#{m_idx},#{writer},#{title},#{content})
+			</otherwise>
+		</choose>
+	</insert>
+	
+	
+	<!-- 모든 게시글 조회 -->
+	<select id="getBoards" parameterType="searchVO" resultType="boardVO">
+		<!-- 검색어가 있는 경우와 없는 경우 -->
+		<choose>
+			<when test="searchWord != null">
+				select /*+ INDEX(tbl_board tbl_board_pk) */ * 
+						from tbl_board 
+						where del_or_not = 1
+						<choose>
+							<when test="searchField == 'title'">
+								and title like CONCAT('%',#{searchWord},'%')
+							</when>
+							<when test="searchField == 'content'">
+								and content like CONCAT('%',#{searchWord},'%')
+							</when>
+							<otherwise>
+								and writer like CONCAT('%',#{searchWord},'%')
+							</otherwise>
+						</choose>
+						 order by b_idx desc 
+						 limit #{startIdx}, 10
+						<!-- limit (#{pageNum}-1)*10, 10 ~ MySQL구문오류 발생 -->
+			</when>
+			<otherwise>
+				select /*+ INDEX(tbl_board tbl_board_pk) */ *
+						from tbl_board 
+						where del_or_not = 1
+				    	order by b_idx desc 
+					    limit #{startIdx}, 10
+					    <!-- limit (#{pageNum}-1)*10, 10 ~ MySQL구문오류 발생 -->
+			</otherwise>
+		</choose>
+		
+	</select>
+	
+	<!-- 총게시물수 조회 -->
+	<select id="getTotalCount" parameterType="searchVO" resultType="_int">
+		<!-- 검색어가 있는 경우와 없는 경우 -->
+		<choose>
+			<when test="searchWord != null">
+				select count(*) 
+						from tbl_board 
+						where del_or_not = 1
+						<choose>
+							<when test="searchField == 'title'">
+								and title like CONCAT('%',#{searchWord},'%')
+							</when>
+							<when test="searchField == 'content'">
+								and content like CONCAT('%',#{searchWord},'%')
+							</when>
+							<otherwise>
+								and writer like CONCAT('%',#{searchWord},'%')
+							</otherwise>
+						</choose> 
+			</when>
+			<otherwise>
+				select count(*) 
+						from tbl_board 
+						where del_or_not = 1	
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<!-- 조회수 업데이트 -->
+	<update id="updateRead_cnt" parameterType="_int">
+		update tbl_board set read_cnt = (read_cnt + 1) where b_idx = #{b_idx}
+	</update>
+	
+  
+  	<!-- 하나의 게시글 조회 -->
+  	<select id="getBoard" parameterType="_int" resultType="boardVO">
+  		select * from tbl_board where b_idx = #{b_idx}
+  	</select>
+  	
+ 	
+  	<!-- 게시글 수정하기 -->
+  	<update id="update" parameterType="boardVO">
+  		<!-- 업로드된 파일이 있는 경우와 없는 경우 -->
+		<choose>
+			<when test="originfile_name != null">
+				update tbl_board set title=#{title}, content=#{content}, 
+					originfile_name=#{originfile_name}, savefile_name=#{savefile_name}, update_date=now() 
+					where b_idx=#{b_idx}
+						
+			</when>
+			<otherwise>
+				update tbl_board set title=#{title}, content=#{content}, update_date=now()  
+					where b_idx=#{b_idx}
+			</otherwise>
+		</choose>
+  	</update>
+  	
+  	
+  	<!-- 게시글 삭제 처리하기 -->
+  	<update id="delete" parameterType="_int">
+  		update tbl_board set del_or_not=-1, update_date=now() 
+				where b_idx=#{b_idx}
+  	</update>
+  	
+  
+</mapper>
